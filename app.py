@@ -62,16 +62,16 @@ class App:
         print('App.draw_clock_view')
         self.display.clear(15)
         # Use RTC for the clock display when available (fallback to localtime)
+        now = None
         try:
             rtc = machine.RTC()
             dt = rtc.datetime()
-            # Ensure the RTC returns a plausible datetime before trusting it.
-            if isinstance(dt, tuple) and len(dt) >= 8 and dt[0] >= 2020:
-                # dt -> (year, month, day, weekday, hours, minutes, seconds, subseconds)
+            # dt -> (year, month, day, weekday, hours, minutes, seconds, subseconds)
+            if isinstance(dt, (tuple, list)) and len(dt) >= 8:
                 now = (dt[0], dt[1], dt[2], dt[4], dt[5], dt[6], dt[3], 0)
-            else:
-                raise ValueError('RTC has invalid datetime')
         except Exception:
+            pass
+        if now is None:
             now = time.localtime()
         try:
             # ensure gothic font for the clock
@@ -145,37 +145,34 @@ class App:
         self.display.show(full=True)
 
     def draw_timer_running(self, full=True):
-        if full:
-            self.display.clear(15)
-            if self.timer_end is None:
-                self.display.draw_text(8, 40, 'No timer', 0, scale=1.5)
-                self.display.draw_text(8, 90, 'C: back', 0)
-                self.display.show(full=True)
-                return
-            self.display.draw_text(8, 10, 'Timer running', 0, scale=0.7)
-            self.display.draw_text(8, 20, '~~~~~~~~~~~~~~~~~~', 0, scale=0.6)
-            self.display.draw_text(8, 95, 'B: cancel   C: back', 0, scale=0.75)
-        if self.timer_end is not None:
-            remaining = max(0, int(self.timer_end - time.time()))
-            self.display.fill_rect(8, 56, 180, 50, 15)
-            self.display.draw_text(8, 60, '{}m {}s'.format(remaining // 60, remaining % 60), 0, scale=2)
-        self.display.show(full=full)
+        self.display.clear(15)
+        if self.timer_end is None:
+            self.display.draw_text(8, 40, 'No timer', 0, scale=1.5)
+            self.display.draw_text(8, 90, 'C: back', 0)
+            self.display.show(full=True)
+            return
+        self.display.draw_text(8, 10, 'Timer running', 0, scale=0.7)
+        self.display.draw_text(8, 20, '~~~~~~~~~~~~~~~~~~', 0, scale=0.6)
+        self.display.draw_text(8, 95, 'B: cancel   C: back', 0, scale=0.75)
+        remaining = max(0, int(self.timer_end - time.time()))
+        self.display.fill_rect(8, 56, 180, 50, 15)
+        self.display.draw_text(8, 60, '{}m {}s'.format(remaining // 60, remaining % 60), 0, scale=2)
+        self.display.show(full=True)
 
     def draw_stopwatch(self, elapsed, full=True, paused=False):
-        if full:
-            try:
-                self.display.set_font('sans')
-            except Exception:
-                pass
-            self.display.clear(15)
-            self.display.draw_text(8, 14, 'Stopwatch', 0, scale=1)
-            if paused:
-                self.display.draw_text(8, 100, 'A: start   C: back', 0, scale=0.75)
-            else:
-                self.display.draw_text(8, 100, 'B: stop   C: back', 0, scale=0.75)
+        try:
+            self.display.set_font('sans')
+        except Exception:
+            pass
+        self.display.clear(15)
+        self.display.draw_text(8, 14, 'Stopwatch', 0, scale=1)
+        if paused:
+            self.display.draw_text(8, 100, 'A: start   C: back', 0, scale=0.75)
+        else:
+            self.display.draw_text(8, 100, 'B: stop   C: back', 0, scale=0.75)
         self.display.fill_rect(15, 60, 190, 50, 15)
         self.display.draw_text(15, 60, '{}s'.format(int(elapsed)), 0, scale=2)
-        self.display.show(full=full)
+        self.display.show(full=True)
 
     def draw_splash_view(self):
         print('App.draw_splash_view')
@@ -330,13 +327,13 @@ class App:
                 # Update running timer every second
                 elif self.state == 'timer_running' and self.timer_end is not None:
                     if time.ticks_diff(time.ticks_ms(), self.last_timer_refresh_ms) >= 1000:
-                        self.draw_timer_running(full=False)
+                        self.draw_timer_running()
                         self.last_timer_refresh_ms = time.ticks_ms()
                 elif self.state == 'stopwatch_running':
                     elapsed = self.stopwatch_elapsed + (time.time() - self.stopwatch_start)
-                    self.draw_stopwatch(elapsed, full=False)
+                    self.draw_stopwatch(elapsed)
                 # Periodic clock refresh
-                elif self.state == 'clock' and time.ticks_diff(time.ticks_ms(), self.last_refresh_ms) >= 30000:
+                elif self.state == 'clock' and time.ticks_diff(time.ticks_ms(), self.last_refresh_ms) >= 1000:
                     self.draw_clock_view()
                     self.last_refresh_ms = time.ticks_ms()
                 time.sleep(0.05)
