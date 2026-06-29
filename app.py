@@ -285,6 +285,8 @@ class App:
             return
 
     def run(self):
+        self.draw_splash_view()
+        time.sleep(4)
         self.draw_clock_view()
         while True:
             try:
