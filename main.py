@@ -20,8 +20,8 @@ import math
 from display import Display
 
 # --- Configuration (change as needed) ---
-WIDTH = 200
-HEIGHT = 104
+WIDTH = 296
+HEIGHT = 128
 WORK_END_HOUR = 17
 WORK_END_MIN = 30
 
@@ -80,6 +80,7 @@ def main():
     custom_minutes = 5
     timer_end = None
     stopwatch_start = None
+    last_refresh_ms = time.ticks_ms()
 
     def draw_clock_view():
         display.clear(1)
@@ -143,6 +144,9 @@ def main():
         display.draw_text(8, 52, 'B double-press: back')
         display.show()
 
+    def draw_splash_view():
+        display.draw_splash()
+
     # initial draw
     draw_clock_view()
 
@@ -179,7 +183,9 @@ def main():
 
         if btn_c.is_pressed():
             wait_for_release(btn_c)
-            # C doesn't do anything on main clock view
+            prev_state = state
+            state = 'splash'
+            draw_splash_view()
 
         # if in timer menu, wait for selection
         if state == 'menu_timer':
@@ -225,10 +231,29 @@ def main():
             elapsed = time.time() - stopwatch_start if stopwatch_start else 0
             draw_stopwatch(elapsed)
 
-        # Always update clock view once per minute when idle
+        elif state == 'splash':
+            if btn_a.is_pressed():
+                wait_for_release(btn_a)
+                prev_state = state
+                state = 'menu_timer'
+                draw_menu_timer()
+            elif btn_b.is_pressed():
+                wait_for_release(btn_b)
+                prev_state = state
+                state = 'stopwatch_running'
+                stopwatch_start = time.time()
+                draw_stopwatch(0)
+            elif btn_c.is_pressed():
+                wait_for_release(btn_c)
+                state = 'clock'
+                draw_clock_view()
+
+        # Only refresh the clock view when needed in idle state to avoid
+        # redrawing the e-ink display continuously.
         if state == 'clock':
-            # redraw every 30 seconds to keep clock reasonably fresh
-            draw_clock_view()
+            if time.ticks_diff(time.ticks_ms(), last_refresh_ms) >= 30000:
+                draw_clock_view()
+                last_refresh_ms = time.ticks_ms()
 
         time.sleep(0.5)
 

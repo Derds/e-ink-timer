@@ -140,6 +140,27 @@ class Display:
     def draw_text(self, x, y, text, color=0):
         self.fb.text(text, x, y, color)
 
+    def draw_splash(self):
+        self.clear(1)
+        # Prefer driver-provided graphics API if available.
+        gfx = None
+        if self.inky_obj is not None:
+            gfx = getattr(self.inky_obj, 'graphics', None)
+            if gfx is None:
+                gfx = self.inky_obj
+
+        if gfx is not None and hasattr(gfx, 'set_font') and hasattr(gfx, 'text'):
+            try:
+                gfx.set_font('gothic')
+                gfx.text('cyberderds timer', 10, self.height // 2 - 8)
+                self.show()
+                return
+            except Exception:
+                pass
+
+        self.fb.text('cyberderds timer', 8, self.height // 2 - 8, 0)
+        self.show()
+
     def _draw_circle(self, cx, cy, r, color=0):
         # simple circle rasterization (degrees step of 4 keeps it light)
         for deg in range(0, 360, 4):
