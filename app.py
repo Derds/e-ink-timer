@@ -27,6 +27,12 @@ class App:
         self.btn_a = Button(A_PIN)
         self.btn_b = Button(B_PIN)
         self.btn_c = Button(C_PIN)
+        # onboard LED for feedback (Pico default)
+        try:
+            self.led = machine.Pin(25, machine.Pin.OUT)
+            self.led.value(0)
+        except Exception:
+            self.led = None
 
         self.state = 'clock'
         self.prev_state = None
@@ -158,28 +164,47 @@ class App:
         print('App.draw_splash_view')
         self.display.draw_splash()
 
+    def _blink_led(self, ms=80):
+        if getattr(self, 'led', None) is None:
+            return
+        try:
+            self.led.value(1)
+            time.sleep_ms(ms)
+            self.led.value(0)
+        except Exception:
+            pass
+
     def button_a(self):
+        print('button_a() pressed; state=', self.state)
+        self._blink_led()
         self.prev_state = self.state
         if self.state == 'clock':
             self.state = 'menu_timer'
             self.draw_menu_timer()
+            time.sleep(2)
         elif self.state == 'menu_timer':
             self.timer_end = time.time() + 5 * 60
             print('Timer started: 5 minutes')
             self.state = 'timer_running'
             self.draw_timer_running()
+            time.sleep(2)
         elif self.state == 'custom_adjust':
             self.custom_minutes += 1
             self.draw_custom()
+            time.sleep(2)
         elif self.state == 'splash':
             self.state = 'menu_timer'
             self.draw_menu_timer()
+            time.sleep(2)
         elif self.state == 'stopwatch_running':
             self.state = 'stopwatch_running'
             self.stopwatch_start = time.time()
             self.draw_stopwatch(0)
+            time.sleep(2)
 
     def button_b(self):
+        print('button_b() pressed; state=', self.state)
+        self._blink_led()
         # simplified press handling for testing (no debounce/re-check)
         if self.state == 'clock':
             self.state = 'stopwatch_running'
@@ -214,6 +239,8 @@ class App:
             self.draw_stopwatch(0)
 
     def button_c(self):
+        print('button_c() pressed; state=', self.state)
+        self._blink_led()
         self.prev_state = self.state
         if self.state == 'clock':
             self.state = 'splash'
@@ -240,12 +267,11 @@ class App:
             self.draw_clock_view()
 
     def handle_buttons(self):
-        # Read raw button states and log for diagnostics
+        # Read raw button states and log for diagnostics (always print)
         a_pressed = self.btn_a.is_pressed()
         b_pressed = self.btn_b.is_pressed()
         c_pressed = self.btn_c.is_pressed()
-        if self.display.debug:
-            print('handle_buttons: A=%s B=%s C=%s' % (a_pressed, b_pressed, c_pressed))
+        print('handle_buttons: A=%s B=%s C=%s' % (a_pressed, b_pressed, c_pressed))
 
         # Prioritize C (splash/back), then B, then A to match expected navigation
         if c_pressed:
