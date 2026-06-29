@@ -164,16 +164,30 @@ class Display:
         if self.debug:
             print('Display.draw_text: all text signatures failed')
 
-    def show(self):
+    def show(self, full=False):
+        """Present the current buffer to the display.
+
+        If `full` is True and the native driver supports `update()`, perform
+        a double update to help reduce ghosting on partial/full refreshes.
+        """
         if self.debug:
-            print('Display.show: native_canvas=', self.native_canvas)
+            print('Display.show: native_canvas=', self.native_canvas, 'full=', full)
         if self.inky_obj is None:
             print('Display.show: no driver loaded')
             return
+        # Prefer explicit update API for PicoGraphics
         if hasattr(self.inky_obj, 'update'):
             try:
                 self.inky_obj.update()
                 print('Display.show: native update')
+                if full:
+                    # small pause then update again to reduce ghosting
+                    time.sleep(0.2)
+                    try:
+                        self.inky_obj.update()
+                        print('Display.show: native update (second pass)')
+                    except Exception as e:
+                        print('Display.show: second native update failed', e)
                 return
             except Exception as e:
                 print('Display.show: native update failed', e)
@@ -181,6 +195,13 @@ class Display:
             try:
                 self.inky_obj.show()
                 print('Display.show: native show')
+                if full:
+                    time.sleep(0.2)
+                    try:
+                        self.inky_obj.show()
+                        print('Display.show: native show (second pass)')
+                    except Exception as e:
+                        print('Display.show: second native show failed', e)
                 return
             except Exception as e:
                 print('Display.show: native show failed', e)

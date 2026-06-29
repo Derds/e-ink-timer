@@ -52,8 +52,14 @@ class App:
     def draw_clock_view(self):
         print('App.draw_clock_view')
         self.display.clear(15)
-        # Use RTC/localtime for the clock display
-        now = time.localtime()
+        # Use RTC for the clock display when available (fallback to localtime)
+        try:
+            rtc = machine.RTC()
+            dt = rtc.datetime()
+            # dt -> (year, month, day, weekday, hours, minutes, seconds, subseconds)
+            now = (dt[0], dt[1], dt[2], dt[4], dt[5], dt[6], dt[3], 0)
+        except Exception:
+            now = time.localtime()
         try:
             # ensure gothic font for the clock
             self.display.set_font('gothic')
@@ -104,7 +110,8 @@ class App:
         self.display.draw_text(8, line_y, 'b: 25 minutes', 0, scale=1.5)
         line_y += 30
         self.display.draw_text(8, line_y, 'c: custom', 0, scale=1.5)
-        self.display.show()
+        # Use full refresh for menu transitions to reduce ghosting
+        self.display.show(full=True)
 
     def draw_custom(self):
         self.display.clear(15)
@@ -118,7 +125,7 @@ class App:
         self.display.draw_text(8, line_y, '{} minutes'.format(self.custom_minutes), 0, scale=1.5)
         line_y += 36
         self.display.draw_text(8, line_y, 'A:+1m   B:-1m   C:start', 0, scale=1.25)
-        self.display.show()
+        self.display.show(full=True)
 
     def draw_timer_running(self):
         self.display.clear(15)
@@ -187,6 +194,7 @@ class App:
         elif self.state == 'timer_running':
             # cancel timer
             self.timer_end = None
+            print('Timer cancelled')
             self.state = 'clock'
             self.draw_clock_view()
         elif self.state == 'custom_adjust':
@@ -213,6 +221,7 @@ class App:
             self.draw_timer_running()
         elif self.state == 'timer_running':
             self.timer_end = None
+            print('Timer cancelled')
             self.state = 'clock'
             self.draw_clock_view()
         elif self.state == 'stopwatch_running':
