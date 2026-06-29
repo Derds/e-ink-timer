@@ -130,6 +130,23 @@ class Display:
         except Exception:
             pass
 
+    def fill_rect(self, x, y, w, h, color=0):
+        self.set_pen(color)
+        if self.drawer is None:
+            return
+        try:
+            if hasattr(self.drawer, 'rectangle'):
+                self.drawer.rectangle(x, y, w, h)
+                return
+            if hasattr(self.drawer, 'rect'):
+                self.drawer.rect(x, y, w, h)
+                return
+        except Exception:
+            pass
+        for py in range(y, y + h):
+            for px in range(x, x + w):
+                self.draw_pixel(px, py, color)
+
     def draw_text(self, x, y, text, color=0, scale=1):
         if self.debug:
             print('Display.draw_text:', text, 'x=', x, 'y=', y, 'color=', color, 'scale=', scale)
