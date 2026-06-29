@@ -249,3 +249,4 @@ class App:
         time.sleep(2)
         self.draw_custom()
         time.sleep(2)
+        self.draw_splash_view()
