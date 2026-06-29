@@ -15,9 +15,12 @@ class Display:
         self.inky_obj = None
         self.drawer = None
         self.native_canvas = False
+        self.debug = True
 
         self._init_driver()
-        self.clear(1)
+        if self.debug:
+            print('Display.__init__: width=', self.width, 'height=', self.height, 'native_canvas=', self.native_canvas)
+        self.clear(15)
 
     def _init_driver(self):
         try:
@@ -27,6 +30,11 @@ class Display:
             if hasattr(self.inky_obj, 'set_update_speed'):
                 try:
                     self.inky_obj.set_update_speed(3)
+                except Exception:
+                    pass
+            if hasattr(self.inky_obj, 'set_font'):
+                try:
+                    self.inky_obj.set_font('gothic')
                 except Exception:
                     pass
             self.drawer = self.inky_obj
@@ -41,31 +49,47 @@ class Display:
     def clear(self, color=1):
         if self.drawer is None:
             return
+        if self.debug:
+            print('Display.clear: color=', color, 'native=', self.native_canvas)
         if self.native_canvas:
             self.set_pen(color)
             try:
                 self.drawer.clear()
+                if self.debug:
+                    print('Display.clear: native clear() succeeded')
                 return
-            except Exception:
-                pass
+            except Exception as e:
+                if self.debug:
+                    print('Display.clear: native clear() failed', e)
         try:
             self.drawer.clear(color)
-        except Exception:
+            if self.debug:
+                print('Display.clear: clear(color) succeeded')
+            return
+        except Exception as e:
+            if self.debug:
+                print('Display.clear: clear(color) failed', e)
             try:
                 self.drawer.fill(color)
-            except Exception:
+                if self.debug:
+                    print('Display.clear: fill(color) succeeded')
+                return
+            except Exception as e2:
+                if self.debug:
+                    print('Display.clear: fill(color) failed', e2)
                 pass
 
     def set_pen(self, color):
         if self.drawer is None:
             return
+        if self.debug:
+            print('Display.set_pen:', color, 'native=', self.native_canvas)
         if hasattr(self.drawer, 'set_pen'):
             try:
-                if self.native_canvas:
-                    color = 1 - color
                 self.drawer.set_pen(color)
-            except Exception:
-                pass
+            except Exception as e:
+                if self.debug:
+                    print('Display.set_pen failed', e)
 
     def draw_line(self, x1, y1, x2, y2, color=0):
         self.set_pen(color)
@@ -81,14 +105,43 @@ class Display:
         except Exception:
             pass
 
-    def draw_text(self, x, y, text, color=0):
+    def draw_text(self, x, y, text, color=0, scale=1):
+        if self.debug:
+            print('Display.draw_text:', text, 'x=', x, 'y=', y, 'color=', color, 'scale=', scale)
         self.set_pen(color)
         try:
+            self.drawer.text(text, x, y, scale=scale)
+            if self.debug:
+                print('Display.draw_text: text(text,x,y,scale=) succeeded')
+            return
+        except TypeError as e:
+            if self.debug:
+                print('Display.draw_text: text(text,x,y,scale=) failed', e)
+        except Exception as e:
+            if self.debug:
+                print('Display.draw_text: text(text,x,y,scale=) failed', e)
+        try:
+            self.drawer.text(text, x, y, scale)
+            if self.debug:
+                print('Display.draw_text: text(text,x,y,scale) succeeded')
+            return
+        except Exception as e:
+            if self.debug:
+                print('Display.draw_text: text(text,x,y,scale) failed', e)
+        try:
             self.drawer.text(text, x, y)
-        except Exception:
-            pass
+            if self.debug:
+                print('Display.draw_text: fallback text(text,x,y) succeeded')
+            return
+        except Exception as e:
+            if self.debug:
+                print('Display.draw_text: fallback text(text,x,y) failed', e)
+        if self.debug:
+            print('Display.draw_text: all text signatures failed')
 
     def show(self):
+        if self.debug:
+            print('Display.show: native_canvas=', self.native_canvas)
         if self.inky_obj is None:
             print('Display.show: no driver loaded')
             return
@@ -109,8 +162,8 @@ class Display:
         print('Display.show: no update/show method')
 
     def flash_message(self, text, seconds=3):
-        self.clear(0)
-        self.draw_text((self.width - len(text) * 8) // 2, (self.height - 8) // 2, text, 1)
+        self.clear(15)
+        self.draw_text((self.width - len(text) * 8) // 2, (self.height - 8) // 2, text, 0)
         self.show()
 
     def draw_clock(self, cx, cy, radius, hours, minutes):
@@ -134,8 +187,10 @@ class Display:
         self.draw_line(cx, cy, hx, hy, 0)
 
     def draw_splash(self):
-        self.clear(1)
-        self.draw_text(8, self.height // 2 - 8, 'cyberderds timer', 0)
+        if self.debug:
+            print('Display.draw_splash: clearing and drawing splash')
+        self.clear(15)
+        self.draw_text(8, self.height // 2 - 8, 'cyberderds timer', 0, scale=1.5)
         self.show()
 
     def draw_circle(self, cx, cy, r, color=0):
