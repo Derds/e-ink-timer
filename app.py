@@ -8,9 +8,9 @@ WIDTH = 296
 HEIGHT = 128
 WORK_END_HOUR = 17
 WORK_END_MIN = 30
-A_PIN = 14
-B_PIN = 15
-C_PIN = 16
+A_PIN = 12
+B_PIN = 13
+C_PIN = 14
 
 
 class Button:
