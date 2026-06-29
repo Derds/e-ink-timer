@@ -104,27 +104,26 @@ class Display:
             fn = getattr(self.inky_obj, m, None)
             if fn is None:
                 continue
-            try:
-                fn(self.buffer)
-                print('Display.show: wrote buffer via', m)
-                return
-            except TypeError:
-                pass
-            try:
-                fn(self.buffer, self.width, self.height)
-                print('Display.show: wrote buffer via', m, '(buffer,width,height)')
-                return
-            except TypeError:
-                pass
-            try:
-                fn(self.width, self.height, self.buffer)
-                print('Display.show: wrote buffer via', m, '(width,height,buffer)')
-                return
-            except TypeError:
-                pass
-            except Exception:
-                print('Display.show: method', m, 'raised', sys.exc_info())
-                pass
+            for args in [
+                (self.buffer,),
+                (self.buffer, self.width, self.height),
+                (self.width, self.height, self.buffer),
+            ]:
+                try:
+                    fn(*args)
+                    if m in ('set_frame_buffer', 'set_framebuffer', 'display_buffer') and hasattr(self.inky_obj, 'update'):
+                        try:
+                            self.inky_obj.update()
+                            print('Display.show: called update() after', m)
+                        except Exception as e:
+                            print('Display.show: update() failed after', m, e)
+                    print('Display.show: wrote buffer via', m, args)
+                    return
+                except TypeError:
+                    continue
+                except Exception:
+                    print('Display.show: method', m, 'raised', sys.exc_info())
+                    continue
 
         # Try direct PicoGraphics methods
         if self.driver_name == 'picographics':
