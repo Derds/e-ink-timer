@@ -61,6 +61,8 @@ class Display:
             return
         if hasattr(self.drawer, 'set_pen'):
             try:
+                if self.native_canvas:
+                    color = 1 - color
                 self.drawer.set_pen(color)
             except Exception:
                 pass
@@ -90,23 +92,21 @@ class Display:
         if self.inky_obj is None:
             print('Display.show: no driver loaded')
             return
-        did_something = False
         if hasattr(self.inky_obj, 'update'):
             try:
                 self.inky_obj.update()
-                did_something = True
                 print('Display.show: native update')
+                return
             except Exception as e:
                 print('Display.show: native update failed', e)
         if hasattr(self.inky_obj, 'show'):
             try:
                 self.inky_obj.show()
-                did_something = True
                 print('Display.show: native show')
+                return
             except Exception as e:
                 print('Display.show: native show failed', e)
-        if not did_something:
-            print('Display.show: no update/show method')
+        print('Display.show: no update/show method')
 
     def flash_message(self, text, seconds=3):
         self.clear(0)
