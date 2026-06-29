@@ -59,12 +59,14 @@ class App:
 
         if (9 <= now[3] < WORK_END_HOUR) or (now[3] == WORK_END_HOUR and now[4] <= WORK_END_MIN):
             hrs_rem, mins_rem = self.compute_work_remaining(now)
-            self.display.draw_text(8, 80, 'Work left:', 0)
-            self.display.draw_text(8, 98, self.format_hm(hrs_rem, mins_rem), 0)
+            # Smaller text for work hours to fit the screen
+            self.display.draw_text(8, 80, 'Work left:', 0, scale=1)
+            self.display.draw_text(8, 98, self.format_hm(hrs_rem, mins_rem), 0, scale=1)
         else:
-            self.display.draw_text(8, 80, 'Outside work hours', 0)
+            self.display.draw_text(8, 80, 'Outside work hours', 0, scale=1)
 
-        self.display.draw_text(8, 112, 'A: timer   B: stopwatch   C: splash', 0)
+        # Smaller, more compact options line to improve legibility and fit
+        self.display.draw_text(8, 112, 'A:timer B:stop C:splash', 0, scale=1)
         self.display.show()
 
     def draw_menu_timer(self):
@@ -72,7 +74,7 @@ class App:
         line_y = 8
         self.display.draw_text(8, line_y, 'Timer menu:', 0)
         line_y += 30
-        self.display.draw_text(8, line_y, 'a: 5 minutes', 0)
+        self.display.draw_text(20, line_y, 'a: 5 minutes', 0)
         line_y += 30
         self.display.draw_text(8, line_y, 'b: 25 minutes', 0)
         line_y += 30

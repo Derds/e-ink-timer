@@ -6,6 +6,7 @@ available, because your hardware works with the direct PicoGraphics pattern
 shown in your example.
 """
 import math
+import time
 
 
 class Display:
@@ -32,11 +33,8 @@ class Display:
                     self.inky_obj.set_update_speed(3)
                 except Exception:
                     pass
-            if hasattr(self.inky_obj, 'set_font'):
-                try:
-                    self.inky_obj.set_font('gothic')
-                except Exception:
-                    pass
+            # Do not force a particular font here (avoids forcing 'gothic').
+            # Apps should control legibility via `scale` when calling `draw_text`.
             self.drawer = self.inky_obj
             self.native_canvas = True
             print('Display: picographics native driver', self.width, self.height)
@@ -200,9 +198,18 @@ class Display:
     def draw_splash(self):
         if self.debug:
             print('Display.draw_splash: clearing and drawing splash')
-        self.clear(15)
-        self.draw_text(8, self.height // 2 - 8, 'cyberderds timer', 0, scale=1.5)
-        self.show()
+        # Dark background with white text, pause, then invert colors
+        try:
+            self.clear(0)
+            self.draw_text(8, self.height // 2 - 8, 'cyberderds', 1, scale=2)
+            self.show()
+            time.sleep(1)
+            self.clear(15)
+            self.draw_text(8, self.height // 2 - 8, 'cyberderds', 0, scale=2)
+            self.show()
+        except Exception as e:
+            if self.debug:
+                print('Display.draw_splash: failed during splash draw', e)
 
     def draw_circle(self, cx, cy, r, color=0):
         self.set_pen(color)
