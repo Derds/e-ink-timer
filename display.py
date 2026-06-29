@@ -48,6 +48,16 @@ class Display:
         if self.inky_obj is not None:
             self.driver_methods = [name for name in dir(self.inky_obj) if not name.startswith('_')]
             print('Display: using driver', self.driver_name, 'methods:', self.driver_methods)
+            # If the driver exposes its own framebuffer object, use it so
+            # drawing is done in the native format expected by the display.
+            if hasattr(self.inky_obj, 'framebuf'):
+                try:
+                    candidate = self.inky_obj.framebuf
+                    if not callable(candidate) and hasattr(candidate, 'fill') and hasattr(candidate, 'text'):
+                        self.fb = candidate
+                        print('Display: using driver-native framebuffer object')
+                except Exception:
+                    pass
 
     def _instantiate_driver_module(self, module):
         if hasattr(module, 'PicoInky'):
@@ -213,7 +223,11 @@ class Display:
                 ]:
                     try:
                         gfx.text(*args)
-                        self.show()
+                        if self.driver_name == 'picographics' and hasattr(self.inky_obj, 'update'):
+                            self.inky_obj.update()
+                            print('Display.show: picographics native text/update')
+                        else:
+                            self.show()
                         return
                     except TypeError:
                         continue
