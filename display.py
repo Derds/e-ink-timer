@@ -243,7 +243,7 @@ class Display:
             except Exception:
                 pass
             self.clear(0)
-            self.draw_text(8, self.height // 2 - 8, 'cyberderds', 1, scale=2)
+            self.draw_text(4, self.height // 2 - 8, 'cyberdeck', 1, scale=1.7)
             self.show()
             time.sleep(1)
             # then render in gothic (dark on white)
@@ -252,7 +252,7 @@ class Display:
             except Exception:
                 pass
             self.clear(15)
-            self.draw_text(8, self.height // 2 - 8, 'cyberderds', 0, scale=2)
+            self.draw_text(2, self.height // 2 - 8, 'cyberderds', 0, scale=1.9)
             self.show()
         except Exception as e:
             if self.debug:

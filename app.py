@@ -97,53 +97,61 @@ class App:
 
     def draw_menu_timer(self):
         self.display.clear(15)
-        line_y = 8
+        line_y = 12
         # Larger menu title and slightly bigger entries
         try:
             self.display.set_font('sans')
         except Exception:
             pass
-        self.display.draw_text(8, line_y, 'Timer menu:', 0, scale=2)
-        line_y += 36
-        self.display.draw_text(20, line_y, 'a: 5 minutes', 0, scale=1.5)
-        line_y += 30
-        self.display.draw_text(8, line_y, 'b: 25 minutes', 0, scale=1.5)
-        line_y += 30
-        self.display.draw_text(8, line_y, 'c: custom', 0, scale=1.5)
+        self.display.draw_text(10, line_y, 'Timer menu:', 0, scale=1)
+        line_y += 20
+        self.display.draw_text(10, line_y, '~~~~~~~~~~~~~~~~~~~', 0, scale=0.6)
+        line_y += 25
+        self.display.draw_text(8, line_y, 'a: 5 minutes', 0, scale=0.5)
+        line_y += 25
+        self.display.draw_text(8, line_y, 'b: 25 minutes', 0, scale=0.5)
+        line_y += 25
+        self.display.draw_text(8, line_y, 'c: custom', 0, scale=0.5)
         # Use full refresh for menu transitions to reduce ghosting
         self.display.show(full=True)
 
     def draw_custom(self):
         self.display.clear(15)
-        line_y = 8
+        line_y = 10
         try:
-            self.display.set_font('sans')
+            self.display.set_font('gothic')
         except Exception:
             pass
-        self.display.draw_text(8, line_y, 'Custom timer', 0, scale=2)
+        self.display.draw_text(8, line_y, 'Custom timer', 0, scale=1)
+        line_y += 20
+        self.display.draw_text(10, line_y, '~~~~~~~~~~~~~~~~~~', 0, scale=0.6)
         line_y += 36
-        self.display.draw_text(8, line_y, '{} minutes'.format(self.custom_minutes), 0, scale=1.5)
+        self.display.draw_text(8, line_y, '{} minutes'.format(self.custom_minutes), 0, scale=1.3)
         line_y += 36
-        self.display.draw_text(8, line_y, 'A:+1m   B:-1m   C:start', 0, scale=1.25)
+        self.display.draw_text(8, line_y, 'A:+1m   B:-1m   C:start', 0, scale=0.7)
         self.display.show(full=True)
 
     def draw_timer_running(self):
         self.display.clear(15)
         if self.timer_end is None:
-            self.display.draw_text(8, 8, 'No timer', 0)
-            self.display.draw_text(8, 32, 'C: back', 0)
+            self.display.draw_text(8, 40, 'No timer', 0, scale=1.5)
+            self.display.draw_text(8, 90, 'C: back', 0)
         else:
             remaining = max(0, int(self.timer_end - time.time()))
-            self.display.draw_text(8, 10, 'Timer running', 0)
+            self.display.draw_text(8, 10, 'Timer running', 0, scale=0.7)
             self.display.draw_text(8, 45, '{}m {}s'.format(remaining // 60, remaining % 60), 0, scale=2)
-            self.display.draw_text(8, 85, 'B: cancel   C: back', 0, scale=1)
+            self.display.draw_text(8, 85, 'B: cancel   C: back', 0, scale=0.5)
         self.display.show()
 
     def draw_stopwatch(self, elapsed):
+        try:
+            self.display.set_font('sans')
+        except Exception:
+            pass
         self.display.clear(15)
-        self.display.draw_text(8, 8, 'Stopwatch', 0)
-        self.display.draw_text(8, 34, '{}s'.format(int(elapsed)), 0, scale=2)
-        self.display.draw_text(8, 84, 'B double-press: back', 0)
+        self.display.draw_text(8, 14, 'Stopwatch', 0, scale=1)
+        self.display.draw_text(15, 60, '{}s'.format(int(elapsed)), 0, scale=2)
+        self.display.draw_text(8, 100, 'B double-press: back', 0, scale=0.75)
         self.display.show()
 
     def draw_splash_view(self):
@@ -209,7 +217,7 @@ class App:
         self.prev_state = self.state
         if self.state == 'clock':
             self.state = 'splash'
-            self.draw_splash_view()
+            self.draw_splash.view()
         elif self.state == 'menu_timer':
             self.state = 'custom_adjust'
             self.custom_minutes = 5
@@ -286,6 +294,8 @@ class App:
         time.sleep(2)
         self.draw_menu_timer()
         time.sleep(2)
+        self.draw_stopwatch(10)
+        time.sleep(4)
         self.draw_custom()
         time.sleep(2)
         self.draw_splash_view()
