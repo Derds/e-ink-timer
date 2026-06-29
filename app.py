@@ -181,26 +181,21 @@ class App:
         if self.state == 'clock':
             self.state = 'menu_timer'
             self.draw_menu_timer()
-            time.sleep(2)
         elif self.state == 'menu_timer':
             self.timer_end = time.time() + 5 * 60
             print('Timer started: 5 minutes')
             self.state = 'timer_running'
             self.draw_timer_running()
-            time.sleep(2)
         elif self.state == 'custom_adjust':
             self.custom_minutes += 1
             self.draw_custom()
-            time.sleep(2)
         elif self.state == 'splash':
             self.state = 'menu_timer'
             self.draw_menu_timer()
-            time.sleep(2)
         elif self.state == 'stopwatch_running':
             self.state = 'stopwatch_running'
             self.stopwatch_start = time.time()
             self.draw_stopwatch(0)
-            time.sleep(2)
 
     def button_b(self):
         print('button_b() pressed; state=', self.state)
@@ -221,6 +216,7 @@ class App:
             self.draw_clock_view()
         elif self.state == 'menu_timer':
             self.timer_end = time.time() + 25 * 60
+            self.last_timer_refresh_ms = time.ticks_ms()
             print('Timer started: 25 minutes')
             self.state = 'timer_running'
             self.draw_timer_running()
@@ -244,7 +240,7 @@ class App:
         self.prev_state = self.state
         if self.state == 'clock':
             self.state = 'splash'
-            self.draw_splash.view()
+            self.draw_splash_view()
         elif self.state == 'menu_timer':
             self.state = 'custom_adjust'
             self.custom_minutes = 5
@@ -252,6 +248,7 @@ class App:
         elif self.state == 'custom_adjust':
             self.state = 'timer_running'
             self.timer_end = time.time() + self.custom_minutes * 60
+            self.last_timer_refresh_ms = time.ticks_ms()
             print('Timer started: {} minutes'.format(self.custom_minutes))
             self.draw_timer_running()
         elif self.state == 'timer_running':
@@ -308,7 +305,7 @@ class App:
                 elif self.state == 'clock' and time.ticks_diff(time.ticks_ms(), self.last_refresh_ms) >= 30000:
                     self.draw_clock_view()
                     self.last_refresh_ms = time.ticks_ms()
-                time.sleep(0.2)
+                time.sleep(0.05)
             except Exception as e:
                 try:
                     print('ERROR:', e)
