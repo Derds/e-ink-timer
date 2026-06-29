@@ -149,6 +149,8 @@ def main():
         display.draw_splash()
 
     # initial draw
+    draw_splash_view()
+    time.sleep(2)
     draw_clock_view()
 
     while True:
@@ -267,4 +269,10 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        try:
+            sys.print_exception(e)
+        except Exception:
+            print('Exception in main:', e)
