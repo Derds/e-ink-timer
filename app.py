@@ -50,7 +50,7 @@ class App:
 
     def draw_clock_view(self):
         print('App.draw_clock_view')
-        self.display.clear(1)
+        self.display.clear(15)
         cx = WIDTH // 4
         cy = HEIGHT // 2
         radius = min(WIDTH, HEIGHT) // 4 - 2
@@ -58,43 +58,43 @@ class App:
         self.display.draw_clock(cx, cy, radius, now[3], now[4])
         rhs_x = WIDTH // 2 + 4
         hrs_rem, mins_rem = self.compute_work_remaining(now)
-        self.display.draw_text(rhs_x, 8, 'Work left:')
-        self.display.draw_text(rhs_x, 20, self.format_hm(hrs_rem, mins_rem))
-        self.display.draw_text(rhs_x, 44, 'a: timer')
-        self.display.draw_text(rhs_x, 56, 'b: stopwatch')
-        self.display.draw_text(rhs_x, 68, 'c: splash')
+        self.display.draw_text(rhs_x, 8, 'Work left:', 0)
+        self.display.draw_text(rhs_x, 20, self.format_hm(hrs_rem, mins_rem), 0)
+        self.display.draw_text(rhs_x, 44, 'a: timer', 0)
+        self.display.draw_text(rhs_x, 56, 'b: stopwatch', 0)
+        self.display.draw_text(rhs_x, 68, 'c: splash', 0)
         self.display.show()
 
     def draw_menu_timer(self):
-        self.display.clear(1)
-        self.display.draw_text(8, 8, 'Timer menu:')
-        self.display.draw_text(8, 28, 'a: 5 minutes')
-        self.display.draw_text(8, 44, 'b: 25 minutes')
-        self.display.draw_text(8, 60, 'c: custom')
+        self.display.clear(15)
+        self.display.draw_text(8, 8, 'Timer menu:', 0)
+        self.display.draw_text(8, 28, 'a: 5 minutes', 0)
+        self.display.draw_text(8, 44, 'b: 25 minutes', 0)
+        self.display.draw_text(8, 60, 'c: custom', 0)
         self.display.show()
 
     def draw_custom(self):
-        self.display.clear(1)
-        self.display.draw_text(8, 8, 'Custom timer')
-        self.display.draw_text(8, 28, '{} minutes'.format(self.custom_minutes))
-        self.display.draw_text(8, 52, 'A:+1m  B:-1m  C:start')
+        self.display.clear(15)
+        self.display.draw_text(8, 8, 'Custom timer', 0)
+        self.display.draw_text(8, 28, '{} minutes'.format(self.custom_minutes), 0)
+        self.display.draw_text(8, 52, 'A:+1m  B:-1m  C:start', 0)
         self.display.show()
 
     def draw_timer_running(self):
-        self.display.clear(1)
+        self.display.clear(15)
         if self.timer_end is None:
-            self.display.draw_text(8, 8, 'No timer')
+            self.display.draw_text(8, 8, 'No timer', 0)
         else:
             remaining = max(0, int(self.timer_end - time.time()))
-            self.display.draw_text(8, 8, 'Timer running')
-            self.display.draw_text(8, 28, '{}m{}s'.format(remaining // 60, remaining % 60))
+            self.display.draw_text(8, 8, 'Timer running', 0)
+            self.display.draw_text(8, 28, '{}m{}s'.format(remaining // 60, remaining % 60), 0)
         self.display.show()
 
     def draw_stopwatch(self, elapsed):
-        self.display.clear(1)
-        self.display.draw_text(8, 8, 'Stopwatch')
-        self.display.draw_text(8, 28, '{}s'.format(int(elapsed)))
-        self.display.draw_text(8, 52, 'B double-press: back')
+        self.display.clear(15)
+        self.display.draw_text(8, 8, 'Stopwatch', 0)
+        self.display.draw_text(8, 28, '{}s'.format(int(elapsed)), 0)
+        self.display.draw_text(8, 52, 'B double-press: back', 0)
         self.display.show()
 
     def draw_splash_view(self):
