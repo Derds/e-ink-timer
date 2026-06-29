@@ -26,6 +26,7 @@ class Display:
         self.inky_obj = None
         self.driver_name = None
         self.driver_methods = []
+        self.native_canvas = False
         # Try to import common Pico/Inky drivers. We prefer Pimoroni's
         # `pico_inky` when available for the Pico Inky Pack (296x128).
         try:
@@ -48,9 +49,14 @@ class Display:
         if self.inky_obj is not None:
             self.driver_methods = [name for name in dir(self.inky_obj) if not name.startswith('_')]
             print('Display: using driver', self.driver_name, 'methods:', self.driver_methods)
-            # If the driver exposes its own framebuffer object, use it so
-            # drawing is done in the native format expected by the display.
-            if hasattr(self.inky_obj, 'framebuf'):
+            # If the driver exposes its own framebuffer object, or the driver
+            # object itself implements framebuffer methods, use that directly.
+            if self.driver_name == 'picographics' and hasattr(self.inky_obj, 'fill'):
+                if hasattr(self.inky_obj, 'text') and hasattr(self.inky_obj, 'line') and hasattr(self.inky_obj, 'pixel'):
+                    self.fb = self.inky_obj
+                    self.native_canvas = True
+                    print('Display: using picographics native drawing canvas')
+            elif hasattr(self.inky_obj, 'framebuf'):
                 try:
                     candidate = self.inky_obj.framebuf
                     if not callable(candidate) and hasattr(candidate, 'fill') and hasattr(candidate, 'text'):
@@ -97,6 +103,24 @@ class Display:
         # MicroPython driver if necessary.
         if self.inky_obj is None:
             print('Display.show: no driver loaded')
+            return
+
+        if self.native_canvas:
+            if hasattr(self.inky_obj, 'update'):
+                try:
+                    self.inky_obj.update()
+                    print('Display.show: native canvas update')
+                    return
+                except Exception as e:
+                    print('Display.show: native canvas update failed', e)
+            if hasattr(self.inky_obj, 'show'):
+                try:
+                    self.inky_obj.show()
+                    print('Display.show: native canvas show')
+                    return
+                except Exception as e:
+                    print('Display.show: native canvas show failed', e)
+            print('Display.show: native canvas present but no update/show method')
             return
 
         # Try a sequence of likely API names. Methods may accept either the
