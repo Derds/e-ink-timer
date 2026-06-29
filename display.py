@@ -142,6 +142,8 @@ class Display:
 
     def draw_splash(self):
         self.clear(1)
+        text = 'cyberderds timer'
+        y = self.height // 2 - 8
         # Prefer driver-provided graphics API if available.
         gfx = None
         if self.inky_obj is not None:
@@ -149,16 +151,31 @@ class Display:
             if gfx is None:
                 gfx = self.inky_obj
 
-        if gfx is not None and hasattr(gfx, 'set_font') and hasattr(gfx, 'text'):
+        if gfx is not None and hasattr(gfx, 'text'):
             try:
-                gfx.set_font('gothic')
-                gfx.text('cyberderds timer', 10, self.height // 2 - 8)
-                self.show()
-                return
+                if hasattr(gfx, 'set_font'):
+                    gfx.set_font('gothic')
+
+                # Try several possible text call signatures.
+                for args in [
+                    (text, 10, y, 0),
+                    (10, y, text, 0),
+                    (10, y, text),
+                    (text, 10, y),
+                ]:
+                    try:
+                        gfx.text(*args)
+                        self.show()
+                        return
+                    except TypeError:
+                        continue
+                    except Exception:
+                        # If any other exception occurs, try the next signature.
+                        continue
             except Exception:
                 pass
 
-        self.fb.text('cyberderds timer', 8, self.height // 2 - 8, 0)
+        self.fb.text(text, 8, y, 0)
         self.show()
 
     def _draw_circle(self, cx, cy, r, color=0):

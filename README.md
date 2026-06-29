@@ -37,6 +37,8 @@ on all if double press "b" go back a menu option
 
 thats all for now
 
+- menu flow diagram: `menu-map.md` for a better display of this
+
 ### questions to ask
 ? does the menu make sense / are these the correct functions
 ? can we go to blank on disconnect
@@ -49,4 +51,3 @@ thats all for now
 - ide is Thonny
 - code needs to be saved as main.py on the pico to run everytime power connects
 - thonny checklist
-- menu flow diagram: `menu-map.md`
