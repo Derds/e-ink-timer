@@ -62,8 +62,8 @@ class App:
         time_str = '{:02}:{:02}'.format(now[3], now[4])
         date_str = '{:02}/{:02}'.format(now[2], now[1])
         # Make time the dominant element
-        self.display.draw_text(8, 4, time_str, 0, scale=4)
-        self.display.draw_text(8, 48, date_str, 0, scale=1)
+        self.display.draw_text(42, 35, time_str, 0, scale=2)
+        self.display.draw_text(222, 20, date_str, 0, scale=0.5)
 
         if (9 <= now[3] < WORK_END_HOUR) or (now[3] == WORK_END_HOUR and now[4] <= WORK_END_MIN):
             hrs_rem, mins_rem = self.compute_work_remaining(now)
@@ -72,21 +72,21 @@ class App:
                 self.display.set_font('sans')
             except Exception:
                 pass
-            self.display.draw_text(8, 84, 'Work left:', 0, scale=1)
-            self.display.draw_text(8, 100, self.format_hm(hrs_rem, mins_rem), 0, scale=1)
+            self.display.draw_text(8, 70, 'Work left:', 0, scale=0.75)
+            self.display.draw_text(8, 90, self.format_hm(hrs_rem, mins_rem), 0, scale=0.75)
         else:
             try:
-                self.display.set_font('sans')
+                self.display.set_font('gothic')
             except Exception:
                 pass
-            self.display.draw_text(8, 84, 'Outside work hours', 0, scale=1.5)
+            self.display.draw_text(8, 70, 'Outside work hours', 0, scale=0.5)
 
         # Options in sans, small
         try:
             self.display.set_font('sans')
         except Exception:
             pass
-        self.display.draw_text(8, 116, 'A:timer B:stop C:splash', 0, scale=1)
+        self.display.draw_text(8, 110, 'A:timer B:stop C:splash', 0, scale=0.75)
         self.display.show()
 
     def draw_menu_timer(self):
@@ -127,9 +127,9 @@ class App:
             self.display.draw_text(8, 32, 'C: back', 0)
         else:
             remaining = max(0, int(self.timer_end - time.time()))
-            self.display.draw_text(8, 8, 'Timer running', 0)
-            self.display.draw_text(8, 34, '{}m {}s'.format(remaining // 60, remaining % 60), 0, scale=2)
-            self.display.draw_text(8, 80, 'B: cancel   C: back', 0)
+            self.display.draw_text(8, 10, 'Timer running', 0)
+            self.display.draw_text(8, 45, '{}m {}s'.format(remaining // 60, remaining % 60), 0, scale=2)
+            self.display.draw_text(8, 85, 'B: cancel   C: back', 0, scale=1)
         self.display.show()
 
     def draw_stopwatch(self, elapsed):
