@@ -232,17 +232,22 @@ class App:
             self.draw_clock_view()
 
     def handle_buttons(self):
-        # Simplified immediate button handling for testing responsiveness
-        if self.btn_a.is_pressed():
-            self.button_a()
-            return
+        # Read raw button states and log for diagnostics
+        a_pressed = self.btn_a.is_pressed()
+        b_pressed = self.btn_b.is_pressed()
+        c_pressed = self.btn_c.is_pressed()
+        if self.display.debug:
+            print('handle_buttons: A=%s B=%s C=%s' % (a_pressed, b_pressed, c_pressed))
 
-        if self.btn_b.is_pressed():
+        # Prioritize C (splash/back), then B, then A to match expected navigation
+        if c_pressed:
+            self.button_c()
+            return
+        if b_pressed:
             self.button_b()
             return
-
-        if self.btn_c.is_pressed():
-            self.button_c()
+        if a_pressed:
+            self.button_a()
             return
 
     def run(self):
