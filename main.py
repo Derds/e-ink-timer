@@ -17,6 +17,7 @@ Notes:
 import time
 import machine
 import math
+import sys
 from display import Display
 
 # --- Configuration (change as needed) ---
@@ -151,111 +152,118 @@ def main():
     draw_clock_view()
 
     while True:
-        # Poll buttons
-        if btn_a.is_pressed():
-            wait_for_release(btn_a)
-            prev_state = state
-            state = 'menu_timer'
-            draw_menu_timer()
-
-        if btn_b.is_pressed():
-            # handle double-press detection
-            now_ms = time.ticks_ms()
-            if time.ticks_diff(now_ms, last_b_time) < 400:
-                b_press_count += 1
-            else:
-                b_press_count = 1
-            last_b_time = now_ms
-            wait_for_release(btn_b)
-            # double press -> go back
-            if b_press_count >= 2:
-                # if in stopwatch, return to previous menu choice
-                if state.startswith('stopwatch'):
-                    state = 'clock'
-                    draw_clock_view()
-                    b_press_count = 0
-                    continue
-            # single press -> start stopwatch
-            prev_state = state
-            state = 'stopwatch_running'
-            stopwatch_start = time.time()
-            draw_stopwatch(0)
-
-        if btn_c.is_pressed():
-            wait_for_release(btn_c)
-            prev_state = state
-            state = 'splash'
-            draw_splash_view()
-
-        # if in timer menu, wait for selection
-        if state == 'menu_timer':
-            if btn_a.is_pressed():
-                wait_for_release(btn_a)
-                start_timer(5)
-                state = 'timer_running'
-                draw_timer_running()
-            elif btn_b.is_pressed():
-                wait_for_release(btn_b)
-                start_timer(25)
-                state = 'timer_running'
-                draw_timer_running()
-            elif btn_c.is_pressed():
-                wait_for_release(btn_c)
-                state = 'custom_adjust'
-                custom_minutes = 5
-                draw_custom(custom_minutes)
-
-        elif state == 'custom_adjust':
-            if btn_a.is_pressed():
-                wait_for_release(btn_a)
-                custom_minutes += 1
-                draw_custom(custom_minutes)
-            elif btn_b.is_pressed():
-                wait_for_release(btn_b)
-                custom_minutes = max(1, custom_minutes - 1)
-                draw_custom(custom_minutes)
-            elif btn_c.is_pressed():
-                wait_for_release(btn_c)
-                start_timer(custom_minutes)
-                state = 'timer_running'
-                draw_timer_running()
-
-        elif state == 'timer_running':
-            if timer_end is not None and time.time() >= timer_end:
-                display.flash_message('timer complete!')
-                timer_end = None
-                state = 'clock'
-                draw_clock_view()
-
-        elif state == 'stopwatch_running':
-            elapsed = time.time() - stopwatch_start if stopwatch_start else 0
-            draw_stopwatch(elapsed)
-
-        elif state == 'splash':
+        try:
+            # Poll buttons
             if btn_a.is_pressed():
                 wait_for_release(btn_a)
                 prev_state = state
                 state = 'menu_timer'
                 draw_menu_timer()
-            elif btn_b.is_pressed():
+
+            if btn_b.is_pressed():
+                # handle double-press detection
+                now_ms = time.ticks_ms()
+                if time.ticks_diff(now_ms, last_b_time) < 400:
+                    b_press_count += 1
+                else:
+                    b_press_count = 1
+                last_b_time = now_ms
                 wait_for_release(btn_b)
+                # double press -> go back
+                if b_press_count >= 2:
+                    # if in stopwatch, return to previous menu choice
+                    if state.startswith('stopwatch'):
+                        state = 'clock'
+                        draw_clock_view()
+                        b_press_count = 0
+                        continue
+                # single press -> start stopwatch
                 prev_state = state
                 state = 'stopwatch_running'
                 stopwatch_start = time.time()
                 draw_stopwatch(0)
-            elif btn_c.is_pressed():
+
+            if btn_c.is_pressed():
                 wait_for_release(btn_c)
-                state = 'clock'
-                draw_clock_view()
+                prev_state = state
+                state = 'splash'
+                draw_splash_view()
 
-        # Only refresh the clock view when needed in idle state to avoid
-        # redrawing the e-ink display continuously.
-        if state == 'clock':
-            if time.ticks_diff(time.ticks_ms(), last_refresh_ms) >= 30000:
-                draw_clock_view()
-                last_refresh_ms = time.ticks_ms()
+            # if in timer menu, wait for selection
+            if state == 'menu_timer':
+                if btn_a.is_pressed():
+                    wait_for_release(btn_a)
+                    start_timer(5)
+                    state = 'timer_running'
+                    draw_timer_running()
+                elif btn_b.is_pressed():
+                    wait_for_release(btn_b)
+                    start_timer(25)
+                    state = 'timer_running'
+                    draw_timer_running()
+                elif btn_c.is_pressed():
+                    wait_for_release(btn_c)
+                    state = 'custom_adjust'
+                    custom_minutes = 5
+                    draw_custom(custom_minutes)
 
-        time.sleep(0.5)
+            elif state == 'custom_adjust':
+                if btn_a.is_pressed():
+                    wait_for_release(btn_a)
+                    custom_minutes += 1
+                    draw_custom(custom_minutes)
+                elif btn_b.is_pressed():
+                    wait_for_release(btn_b)
+                    custom_minutes = max(1, custom_minutes - 1)
+                    draw_custom(custom_minutes)
+                elif btn_c.is_pressed():
+                    wait_for_release(btn_c)
+                    start_timer(custom_minutes)
+                    state = 'timer_running'
+                    draw_timer_running()
+
+            elif state == 'timer_running':
+                if timer_end is not None and time.time() >= timer_end:
+                    display.flash_message('timer complete!')
+                    timer_end = None
+                    state = 'clock'
+                    draw_clock_view()
+
+            elif state == 'stopwatch_running':
+                elapsed = time.time() - stopwatch_start if stopwatch_start else 0
+                draw_stopwatch(elapsed)
+
+            elif state == 'splash':
+                if btn_a.is_pressed():
+                    wait_for_release(btn_a)
+                    prev_state = state
+                    state = 'menu_timer'
+                    draw_menu_timer()
+                elif btn_b.is_pressed():
+                    wait_for_release(btn_b)
+                    prev_state = state
+                    state = 'stopwatch_running'
+                    stopwatch_start = time.time()
+                    draw_stopwatch(0)
+                elif btn_c.is_pressed():
+                    wait_for_release(btn_c)
+                    state = 'clock'
+                    draw_clock_view()
+
+            # Only refresh the clock view when needed in idle state to avoid
+            # redrawing the e-ink display continuously.
+            if state == 'clock':
+                if time.ticks_diff(time.ticks_ms(), last_refresh_ms) >= 30000:
+                    draw_clock_view()
+                    last_refresh_ms = time.ticks_ms()
+
+            time.sleep(0.5)
+        except Exception as e:
+            try:
+                sys.print_exception(e)
+            except Exception:
+                pass
+            break
 
 
 if __name__ == '__main__':
