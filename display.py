@@ -22,24 +22,44 @@ class Display:
         self.fb = framebuf.FrameBuffer(self.buffer, self.width, self.height, framebuf.MONO_HLSB)
         self.clear()
         # driver placeholder and runtime-detected driver instance
-        self.driver = None
         self.inky_obj = None
+        self.driver_name = None
+        self.driver_methods = []
         # Try to import common Pico/Inky drivers. We prefer Pimoroni's
         # `pico_inky` when available for the Pico Inky Pack (296x128).
         try:
             import pico_inky as _pico_inky
-            try:
-                # typical constructor name used in examples
-                self.inky_obj = _pico_inky.PicoInky()
-            except Exception:
-                # fallback to any top-level object
-                self.inky_obj = _pico_inky
-        except Exception:
+            self.driver_name = 'pico_inky'
+            self.inky_obj = self._instantiate_driver_module(_pico_inky)
+        except Exception as e:
             try:
                 import inky as _inky
-                self.inky_obj = _inky
-            except Exception:
+                self.driver_name = 'inky'
+                self.inky_obj = self._instantiate_driver_module(_inky)
+            except Exception as e2:
                 self.inky_obj = None
+                print('Display: no Pico Inky driver found', e, getattr(e2, 'args', None))
+        if self.inky_obj is not None:
+            self.driver_methods = [name for name in dir(self.inky_obj) if not name.startswith('_')]
+            print('Display: using driver', self.driver_name, 'methods:', self.driver_methods)
+
+    def _instantiate_driver_module(self, module):
+        if hasattr(module, 'PicoInky'):
+            try:
+                return module.PicoInky()
+            except Exception:
+                pass
+        if hasattr(module, 'Inky'):
+            try:
+                return module.Inky()
+            except Exception:
+                pass
+        if hasattr(module, 'inky'):
+            try:
+                return module.inky()
+            except Exception:
+                pass
+        return module
 
     def clear(self, color=1):
         # color: 0 for black, 1 for white
@@ -50,6 +70,7 @@ class Display:
         # falls back to no-op if none are present. Adapt to your installed
         # MicroPython driver if necessary.
         if self.inky_obj is None:
+            print('Display.show: no driver loaded')
             return
 
         # Try a sequence of likely API names. Methods may accept either the
@@ -64,45 +85,45 @@ class Display:
         ]
 
         for m in methods:
+            fn = getattr(self.inky_obj, m, None)
+            if fn is None:
+                continue
             try:
-                fn = getattr(self.inky_obj, m, None)
-                if fn is None:
-                    continue
-                # try common signatures
-                try:
-                    fn(self.buffer)
-                    return
-                except TypeError:
-                    try:
-                        fn(self.buffer, self.width, self.height)
-                        return
-                    except TypeError:
-                        # try width/height first
-                        try:
-                            fn(self.width, self.height, self.buffer)
-                            return
-                        except Exception:
-                            pass
-                except Exception:
-                    # ignore and continue to next candidate
-                    pass
+                fn(self.buffer)
+                print('Display.show: wrote buffer via', m)
+                return
+            except TypeError:
+                pass
+            try:
+                fn(self.buffer, self.width, self.height)
+                print('Display.show: wrote buffer via', m, '(buffer,width,height)')
+                return
+            except TypeError:
+                pass
+            try:
+                fn(self.width, self.height, self.buffer)
+                print('Display.show: wrote buffer via', m, '(width,height,buffer)')
+                return
+            except TypeError:
+                pass
             except Exception:
+                print('Display.show: method', m, 'raised', sys.exc_info())
                 pass
 
-        # Some drivers require creating a display object and then calling a
-        # method with no args after having set an internal framebuffer; try
-        # common patterns where a `framebuf` property exists.
-        try:
-            if hasattr(self.inky_obj, 'framebuf'):
-                try:
-                    self.inky_obj.framebuf(self.buffer)
-                    if hasattr(self.inky_obj, 'update'):
-                        self.inky_obj.update()
-                    return
-                except Exception:
-                    pass
-        except Exception:
-            pass
+        # Some drivers require an internal framebuf property and update call.
+        if hasattr(self.inky_obj, 'framebuf'):
+            try:
+                self.inky_obj.framebuf(self.buffer)
+                if hasattr(self.inky_obj, 'update'):
+                    self.inky_obj.update()
+                    print('Display.show: used framebuf/update')
+                else:
+                    print('Display.show: used framebuf only')
+                return
+            except Exception as e:
+                print('Display.show: framebuf update failed', e)
+
+        print('Display.show: no working display method found for', self.driver_name, self.driver_methods)
 
     def flash_message(self, text, seconds=3):
         # Simple invert-then-text flash
