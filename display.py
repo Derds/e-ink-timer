@@ -33,8 +33,11 @@ class Display:
                     self.inky_obj.set_update_speed(3)
                 except Exception:
                     pass
-            # Do not force a particular font here (avoids forcing 'gothic').
-            # Apps should control legibility via `scale` when calling `draw_text`.
+            if hasattr(self.inky_obj, 'set_font'):
+                try:
+                    self.inky_obj.set_font('gothic')
+                except Exception:
+                    pass
             self.drawer = self.inky_obj
             self.native_canvas = True
             print('Display: picographics native driver', self.width, self.height)
@@ -99,6 +102,19 @@ class Display:
             except Exception as e:
                 if self.debug:
                     print('Display.set_pen failed', e)
+
+    def set_font(self, name):
+        """Set the active font on the underlying PicoGraphics object if supported."""
+        if self.inky_obj is None:
+            return
+        if hasattr(self.inky_obj, 'set_font'):
+            try:
+                self.inky_obj.set_font(name)
+                if self.debug:
+                    print('Display.set_font:', name)
+            except Exception as e:
+                if self.debug:
+                    print('Display.set_font failed', e)
 
     def draw_line(self, x1, y1, x2, y2, color=0):
         self.set_pen(color)
@@ -200,10 +216,20 @@ class Display:
             print('Display.draw_splash: clearing and drawing splash')
         # Dark background with white text, pause, then invert colors
         try:
+            # first render in sans (white on dark)
+            try:
+                self.set_font('sans')
+            except Exception:
+                pass
             self.clear(0)
             self.draw_text(8, self.height // 2 - 8, 'cyberderds', 1, scale=2)
             self.show()
             time.sleep(1)
+            # then render in gothic (dark on white)
+            try:
+                self.set_font('gothic')
+            except Exception:
+                pass
             self.clear(15)
             self.draw_text(8, self.height // 2 - 8, 'cyberderds', 0, scale=2)
             self.show()
