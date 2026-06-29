@@ -1,274 +1,139 @@
 """
-Simple display abstraction for MicroPython + Inky pack.
+Simple display abstraction for MicroPython + Inky Pack using PicoGraphics.
 
-This tries to keep drawing code independent of the specific Inky driver.
-If a compatible Inky MicroPython driver is installed and exposes a
-`display_buffer(buffer, width, height)`-style API, adapt the `show()` method.
-
-This file focuses on drawing into a FrameBuffer so the logic in `main.py`
-remains easy to read and change.
+This version is intentionally minimal and assumes `picographics` is
+available, because your hardware works with the direct PicoGraphics pattern
+shown in your example.
 """
 import math
-import sys
-import framebuf
 
 
 class Display:
-    def __init__(self, width=212, height=104):
+    def __init__(self, width=296, height=128):
         self.width = width
         self.height = height
-        # 1 bit per pixel buffer; bytes per row must round up
-        self.bytes_per_row = (self.width + 7) // 8
-        self.buffer = bytearray(self.bytes_per_row * self.height)
-        self.fb = framebuf.FrameBuffer(self.buffer, self.width, self.height, framebuf.MONO_HLSB)
-        self.clear()
-        # driver placeholder and runtime-detected driver instance
         self.inky_obj = None
-        self.driver_name = None
-        self.driver_methods = []
+        self.drawer = None
         self.native_canvas = False
-        # Try to import common Pico/Inky drivers. We prefer Pimoroni's
-        # `pico_inky` when available for the Pico Inky Pack (296x128).
+
+        self._init_driver()
+        self.clear(1)
+
+    def _init_driver(self):
         try:
-            import pico_inky as _pico_inky
-            self.driver_name = 'pico_inky'
-            self.inky_obj = self._instantiate_driver_module(_pico_inky)
-        except Exception as e:
-            try:
-                import picographics as _picographics
-                self.driver_name = 'picographics'
-                self.inky_obj = self._instantiate_driver_module(_picographics)
-            except Exception:
+            import picographics
+            self.inky_obj = picographics.PicoGraphics(picographics.DISPLAY_INKY_PACK)
+            self.width, self.height = self.inky_obj.get_bounds()
+            if hasattr(self.inky_obj, 'set_update_speed'):
                 try:
-                    import inky as _inky
-                    self.driver_name = 'inky'
-                    self.inky_obj = self._instantiate_driver_module(_inky)
-                except Exception as e2:
-                    self.inky_obj = None
-                    print('Display: no Pico Inky driver found', e, getattr(e2, 'args', None))
-        if self.inky_obj is not None:
-            self.driver_methods = [name for name in dir(self.inky_obj) if not name.startswith('_')]
-            print('Display: using driver', self.driver_name, 'methods:', self.driver_methods)
-            # If the driver exposes its own framebuffer object, or the driver
-            # object itself implements framebuffer methods, use that directly.
-            if self.driver_name == 'picographics' and hasattr(self.inky_obj, 'fill'):
-                if hasattr(self.inky_obj, 'text') and hasattr(self.inky_obj, 'line') and hasattr(self.inky_obj, 'pixel'):
-                    self.fb = self.inky_obj
-                    self.native_canvas = True
-                    print('Display: using picographics native drawing canvas')
-            elif hasattr(self.inky_obj, 'framebuf'):
-                try:
-                    candidate = self.inky_obj.framebuf
-                    if not callable(candidate) and hasattr(candidate, 'fill') and hasattr(candidate, 'text'):
-                        self.fb = candidate
-                        print('Display: using driver-native framebuffer object')
+                    self.inky_obj.set_update_speed(3)
                 except Exception:
                     pass
+            self.drawer = self.inky_obj
+            self.native_canvas = True
+            print('Display: picographics native driver', self.width, self.height)
+            return
+        except Exception as e:
+            print('Display: picographics unavailable', e)
 
-    def _instantiate_driver_module(self, module):
-        if hasattr(module, 'PicoInky'):
-            try:
-                return module.PicoInky()
-            except Exception:
-                pass
-        if hasattr(module, 'PicoGraphics'):
-            try:
-                return module.PicoGraphics(module.PICOGFX_296X128)
-            except Exception:
-                pass
-        if hasattr(module, 'PicoGraphics') and hasattr(module, 'DISPLAY_INKY_PACK'):
-            try:
-                return module.PicoGraphics(module.DISPLAY_INKY_PACK)
-            except Exception:
-                pass
-        if hasattr(module, 'Inky'):
-            try:
-                return module.Inky()
-            except Exception:
-                pass
-        if hasattr(module, 'inky'):
-            try:
-                return module.inky()
-            except Exception:
-                pass
-        return module
+        print('Display: no working native display driver')
 
     def clear(self, color=1):
-        # color: 0 for black, 1 for white
-        self.fb.fill(color)
+        if self.drawer is None:
+            return
+        try:
+            self.drawer.clear(color)
+        except Exception:
+            try:
+                self.drawer.fill(color)
+            except Exception:
+                pass
+
+    def set_pen(self, color):
+        if self.drawer is None:
+            return
+        if hasattr(self.drawer, 'set_pen'):
+            try:
+                self.drawer.set_pen(color)
+            except Exception:
+                pass
+
+    def draw_line(self, x1, y1, x2, y2, color=0):
+        self.set_pen(color)
+        try:
+            self.drawer.line(x1, y1, x2, y2)
+        except Exception:
+            pass
+
+    def draw_pixel(self, x, y, color=0):
+        self.set_pen(color)
+        try:
+            self.drawer.pixel(x, y)
+        except Exception:
+            pass
+
+    def draw_text(self, x, y, text, color=0):
+        self.set_pen(color)
+        try:
+            self.drawer.text(text, x, y)
+        except Exception:
+            pass
 
     def show(self):
-        # Send buffer to display. This tries several common Pimoroni APIs and
-        # falls back to no-op if none are present. Adapt to your installed
-        # MicroPython driver if necessary.
         if self.inky_obj is None:
             print('Display.show: no driver loaded')
             return
-
-        if self.native_canvas:
-            if hasattr(self.inky_obj, 'update'):
-                try:
-                    self.inky_obj.update()
-                    print('Display.show: native canvas update')
-                    return
-                except Exception as e:
-                    print('Display.show: native canvas update failed', e)
-            if hasattr(self.inky_obj, 'show'):
-                try:
-                    self.inky_obj.show()
-                    print('Display.show: native canvas show')
-                    return
-                except Exception as e:
-                    print('Display.show: native canvas show failed', e)
-            print('Display.show: native canvas present but no update/show method')
-            return
-
-        # Try a sequence of likely API names. Methods may accept either the
-        # raw bytearray, or (buffer, width, height).
-        methods = [
-            'set_frame_buffer',
-            'set_framebuffer',
-            'display_buffer',
-            'display',
-            'show',
-            'update',
-        ]
-
-        for m in methods:
-            fn = getattr(self.inky_obj, m, None)
-            if fn is None:
-                continue
-            for args in [
-                (self.buffer,),
-                (self.buffer, self.width, self.height),
-                (self.width, self.height, self.buffer),
-            ]:
-                try:
-                    fn(*args)
-                    if m in ('set_frame_buffer', 'set_framebuffer', 'display_buffer') and hasattr(self.inky_obj, 'update'):
-                        try:
-                            self.inky_obj.update()
-                            print('Display.show: called update() after', m)
-                        except Exception as e:
-                            print('Display.show: update() failed after', m, e)
-                    print('Display.show: wrote buffer via', m, args)
-                    return
-                except TypeError:
-                    continue
-                except Exception:
-                    print('Display.show: method', m, 'raised', sys.exc_info())
-                    continue
-
-        # Try direct PicoGraphics methods
-        if self.driver_name == 'picographics':
+        if hasattr(self.inky_obj, 'update'):
             try:
-                if hasattr(self.inky_obj, 'set_pen') and hasattr(self.inky_obj, 'text'):
-                    self.inky_obj.set_pen(1)
-                    self.inky_obj.text('cyberderds timer', 10, self.height // 2)
-                    self.inky_obj.update()
-                    print('Display.show: used picographics text/update')
-                    return
-            except Exception as e:
-                print('Display.show: picographics direct draw failed', e)
-
-        # Some drivers require an internal framebuf property and update call.
-        if hasattr(self.inky_obj, 'framebuf'):
-            try:
-                self.inky_obj.framebuf(self.buffer)
-                if hasattr(self.inky_obj, 'update'):
-                    self.inky_obj.update()
-                    print('Display.show: used framebuf/update')
-                else:
-                    print('Display.show: used framebuf only')
+                self.inky_obj.update()
+                print('Display.show: native update')
                 return
             except Exception as e:
-                print('Display.show: framebuf update failed', e)
-
-        print('Display.show: no working display method found for', self.driver_name, self.driver_methods)
+                print('Display.show: native update failed', e)
+        if hasattr(self.inky_obj, 'show'):
+            try:
+                self.inky_obj.show()
+                print('Display.show: native show')
+                return
+            except Exception as e:
+                print('Display.show: native show failed', e)
+        print('Display.show: no update/show method')
 
     def flash_message(self, text, seconds=3):
-        # Simple invert-then-text flash
-        self.fb.fill(0)  # black background
-        # white text
-        x = max(0, (self.width - len(text) * 8) // 2)
-        y = max(0, (self.height - 8) // 2)
-        self.fb.text(text, x, y, 1)
+        self.clear(0)
+        self.draw_text((self.width - len(text) * 8) // 2, (self.height - 8) // 2, text, 1)
         self.show()
 
     def draw_clock(self, cx, cy, radius, hours, minutes):
-        # Outline circle
-        self._draw_circle(cx, cy, radius, 0)
-        # minute ticks
+        self.draw_circle(cx, cy, radius, 0)
         for m in range(0, 60, 5):
             angle = (m / 60.0) * 2 * math.pi
-            x1 = int(cx + (radius - 2) * math.cos(angle - math.pi/2))
-            y1 = int(cy + (radius - 2) * math.sin(angle - math.pi/2))
-            x2 = int(cx + radius * math.cos(angle - math.pi/2))
-            y2 = int(cy + radius * math.sin(angle - math.pi/2))
-            self.fb.line(x1, y1, x2, y2, 0)
+            x1 = int(cx + (radius - 2) * math.cos(angle - math.pi / 2))
+            y1 = int(cy + (radius - 2) * math.sin(angle - math.pi / 2))
+            x2 = int(cx + radius * math.cos(angle - math.pi / 2))
+            y2 = int(cy + radius * math.sin(angle - math.pi / 2))
+            self.draw_line(x1, y1, x2, y2, 0)
 
-        # minute hand
         minute_angle = (minutes / 60.0) * 2 * math.pi
-        mx = int(cx + (radius - 6) * math.cos(minute_angle - math.pi/2))
-        my = int(cy + (radius - 6) * math.sin(minute_angle - math.pi/2))
-        self.fb.line(cx, cy, mx, my, 0)
+        mx = int(cx + (radius - 6) * math.cos(minute_angle - math.pi / 2))
+        my = int(cy + (radius - 6) * math.sin(minute_angle - math.pi / 2))
+        self.draw_line(cx, cy, mx, my, 0)
 
-        # hour hand
         hour_angle = ((hours % 12 + minutes / 60.0) / 12.0) * 2 * math.pi
-        hx = int(cx + (radius - 14) * math.cos(hour_angle - math.pi/2))
-        hy = int(cy + (radius - 14) * math.sin(hour_angle - math.pi/2))
-        self.fb.line(cx, cy, hx, hy, 0)
-
-    def draw_text(self, x, y, text, color=0):
-        self.fb.text(text, x, y, color)
+        hx = int(cx + (radius - 14) * math.cos(hour_angle - math.pi / 2))
+        hy = int(cy + (radius - 14) * math.sin(hour_angle - math.pi / 2))
+        self.draw_line(cx, cy, hx, hy, 0)
 
     def draw_splash(self):
         self.clear(1)
-        text = 'cyberderds timer'
-        y = self.height // 2 - 8
-        # Prefer driver-provided graphics API if available.
-        gfx = None
-        if self.inky_obj is not None:
-            gfx = getattr(self.inky_obj, 'graphics', None)
-            if gfx is None:
-                gfx = self.inky_obj
-
-        if gfx is not None and hasattr(gfx, 'text'):
-            try:
-                if hasattr(gfx, 'set_font'):
-                    gfx.set_font('gothic')
-
-                # Try several possible text call signatures.
-                for args in [
-                    (text, 10, y, 0),
-                    (10, y, text, 0),
-                    (10, y, text),
-                    (text, 10, y),
-                ]:
-                    try:
-                        gfx.text(*args)
-                        if self.driver_name == 'picographics' and hasattr(self.inky_obj, 'update'):
-                            self.inky_obj.update()
-                            print('Display.show: picographics native text/update')
-                        else:
-                            self.show()
-                        return
-                    except TypeError:
-                        continue
-                    except Exception:
-                        # If any other exception occurs, try the next signature.
-                        continue
-            except Exception:
-                pass
-
-        self.fb.text(text, 8, y, 0)
+        self.draw_text(8, self.height // 2 - 8, 'cyberderds timer', 0)
         self.show()
 
-    def _draw_circle(self, cx, cy, r, color=0):
-        # simple circle rasterization (degrees step of 4 keeps it light)
+    def draw_circle(self, cx, cy, r, color=0):
+        self.set_pen(color)
         for deg in range(0, 360, 4):
             a = math.radians(deg)
             x = int(cx + r * math.cos(a))
             y = int(cy + r * math.sin(a))
             if 0 <= x < self.width and 0 <= y < self.height:
-                self.fb.pixel(x, y, color)
+                self.draw_pixel(x, y, color)
