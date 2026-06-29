@@ -84,21 +84,21 @@ class App:
                 self.display.set_font('sans')
             except Exception:
                 pass
-            self.display.draw_text(8, 70, 'Work left:', 0, scale=0.75)
-            self.display.draw_text(8, 90, self.format_hm(hrs_rem, mins_rem), 0, scale=0.75)
+            self.display.draw_text(20, 80, 'Work left:', 0, scale=0.75)
+            self.display.draw_text(80, 80, self.format_hm(hrs_rem, mins_rem), 0, scale=0.75)
         else:
             try:
                 self.display.set_font('gothic')
             except Exception:
                 pass
-            self.display.draw_text(8, 70, 'Outside work hours', 0, scale=0.5)
+            self.display.draw_text(60, 80, 'Outside work hours', 0, scale=0.5)
 
         # Options in sans, small
         try:
             self.display.set_font('sans')
         except Exception:
             pass
-        self.display.draw_text(8, 110, 'A:timer B:stop C:splash', 0, scale=0.75)
+        self.display.draw_text(8, 110, 'A:timer B:stopwatch C:splash', 0, scale=0.6)
         self.display.show()
 
     def draw_menu_timer(self):
@@ -145,8 +145,9 @@ class App:
         else:
             remaining = max(0, int(self.timer_end - time.time()))
             self.display.draw_text(8, 10, 'Timer running', 0, scale=0.7)
-            self.display.draw_text(8, 45, '{}m {}s'.format(remaining // 60, remaining % 60), 0, scale=2)
-            self.display.draw_text(8, 85, 'B: cancel   C: back', 0, scale=0.5)
+            self.display.draw_text(8, 20, '~~~~~~~~~~~~~~~~~~', 0, scale=0.6)
+            self.display.draw_text(8, 60, '{}m {}s'.format(remaining // 60, remaining % 60), 0, scale=2)
+            self.display.draw_text(8, 95, 'B: cancel   C: back', 0, scale=0.75)
         self.display.show()
 
     def draw_stopwatch(self, elapsed):
@@ -324,3 +325,4 @@ class App:
         self.draw_custom()
         time.sleep(2)
         self.draw_splash_view()
+
