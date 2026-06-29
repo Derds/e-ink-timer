@@ -49,6 +49,7 @@ class App:
         return '{}h{}m'.format(h, m)
 
     def draw_clock_view(self):
+        print('App.draw_clock_view')
         self.display.clear(1)
         cx = WIDTH // 4
         cy = HEIGHT // 2
@@ -97,6 +98,7 @@ class App:
         self.display.show()
 
     def draw_splash_view(self):
+        print('App.draw_splash_view')
         self.display.draw_splash()
 
     def button_a(self):

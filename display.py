@@ -46,17 +46,27 @@ class Display:
 
         print('Display: no working native display driver')
 
+    def _map_color(self, color):
+        if self.native_canvas:
+            if color == 0:
+                return 0
+            if color == 1:
+                return 15
+            return color
+        return color
+
     def clear(self, color=1):
         if self.drawer is None:
             return
         if self.debug:
             print('Display.clear: color=', color, 'native=', self.native_canvas)
+        color = self._map_color(color)
         if self.native_canvas:
             self.set_pen(color)
             try:
                 self.drawer.clear()
                 if self.debug:
-                    print('Display.clear: native clear() succeeded')
+                    print('Display.clear: native clear() succeeded', 'mapped_color=', color)
                 return
             except Exception as e:
                 if self.debug:
@@ -64,7 +74,7 @@ class Display:
         try:
             self.drawer.clear(color)
             if self.debug:
-                print('Display.clear: clear(color) succeeded')
+                print('Display.clear: clear(color) succeeded', 'mapped_color=', color)
             return
         except Exception as e:
             if self.debug:
@@ -72,7 +82,7 @@ class Display:
             try:
                 self.drawer.fill(color)
                 if self.debug:
-                    print('Display.clear: fill(color) succeeded')
+                    print('Display.clear: fill(color) succeeded', 'mapped_color=', color)
                 return
             except Exception as e2:
                 if self.debug:
@@ -82,6 +92,7 @@ class Display:
     def set_pen(self, color):
         if self.drawer is None:
             return
+        color = self._map_color(color)
         if self.debug:
             print('Display.set_pen:', color, 'native=', self.native_canvas)
         if hasattr(self.drawer, 'set_pen'):
