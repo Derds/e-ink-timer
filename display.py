@@ -9,6 +9,7 @@ This file focuses on drawing into a FrameBuffer so the logic in `main.py`
 remains easy to read and change.
 """
 import math
+import sys
 import framebuf
 
 
@@ -33,12 +34,17 @@ class Display:
             self.inky_obj = self._instantiate_driver_module(_pico_inky)
         except Exception as e:
             try:
-                import inky as _inky
-                self.driver_name = 'inky'
-                self.inky_obj = self._instantiate_driver_module(_inky)
-            except Exception as e2:
-                self.inky_obj = None
-                print('Display: no Pico Inky driver found', e, getattr(e2, 'args', None))
+                import picographics as _picographics
+                self.driver_name = 'picographics'
+                self.inky_obj = self._instantiate_driver_module(_picographics)
+            except Exception:
+                try:
+                    import inky as _inky
+                    self.driver_name = 'inky'
+                    self.inky_obj = self._instantiate_driver_module(_inky)
+                except Exception as e2:
+                    self.inky_obj = None
+                    print('Display: no Pico Inky driver found', e, getattr(e2, 'args', None))
         if self.inky_obj is not None:
             self.driver_methods = [name for name in dir(self.inky_obj) if not name.startswith('_')]
             print('Display: using driver', self.driver_name, 'methods:', self.driver_methods)
@@ -47,6 +53,16 @@ class Display:
         if hasattr(module, 'PicoInky'):
             try:
                 return module.PicoInky()
+            except Exception:
+                pass
+        if hasattr(module, 'PicoGraphics'):
+            try:
+                return module.PicoGraphics(module.PICOGFX_296X128)
+            except Exception:
+                pass
+        if hasattr(module, 'PicoGraphics') and hasattr(module, 'DISPLAY_INKY_PACK'):
+            try:
+                return module.PicoGraphics(module.DISPLAY_INKY_PACK)
             except Exception:
                 pass
         if hasattr(module, 'Inky'):
@@ -109,6 +125,18 @@ class Display:
             except Exception:
                 print('Display.show: method', m, 'raised', sys.exc_info())
                 pass
+
+        # Try direct PicoGraphics methods
+        if self.driver_name == 'picographics':
+            try:
+                if hasattr(self.inky_obj, 'set_pen') and hasattr(self.inky_obj, 'text'):
+                    self.inky_obj.set_pen(1)
+                    self.inky_obj.text('cyberderds timer', 10, self.height // 2)
+                    self.inky_obj.update()
+                    print('Display.show: used picographics text/update')
+                    return
+            except Exception as e:
+                print('Display.show: picographics direct draw failed', e)
 
         # Some drivers require an internal framebuf property and update call.
         if hasattr(self.inky_obj, 'framebuf'):
